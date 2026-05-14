@@ -554,6 +554,56 @@ elif view_mode == "Investor Portal":
     </div>
     """, unsafe_allow_html=True)
 
+    # Grand Total Banner (always visible on front page)
+    df_all = load_transactions()
+    if not df_all.empty:
+        all_calc = df_all[df_all['is_tax'] == False]
+        all_tax  = df_all[df_all['is_tax'] == True]
+        g_in  = all_calc['credit'].sum()
+        g_out = all_calc['debit'].sum()
+        g_tax = all_tax['debit'].sum() + all_tax['credit'].sum()
+        g_net = g_in - g_out - g_tax
+        total_files = df_all['source_file'].nunique()
+        total_rows  = len(df_all)
+
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, #0d1b2a, #1a3a5c);
+                    border-radius: 12px; padding: 24px 30px; margin-bottom: 24px;
+                    border: 1px solid #2d4a6e;">
+            <div style="color:#93c5fd; font-size:0.8rem; font-weight:700;
+                        text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;">
+                📊 Ledger Summary — {total_files} Files | {total_rows:,} Transactions
+            </div>
+            <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:20px;">
+                <div>
+                    <div style="color:#6ee7b7; font-size:0.78rem; font-weight:600;">Total Received (In)</div>
+                    <div style="color:#ffffff; font-size:1.5rem; font-weight:800; margin-top:4px;">
+                        Rs. {g_in:,.0f}
+                    </div>
+                </div>
+                <div>
+                    <div style="color:#fca5a5; font-size:0.78rem; font-weight:600;">Total Paid Out</div>
+                    <div style="color:#ffffff; font-size:1.5rem; font-weight:800; margin-top:4px;">
+                        Rs. {g_out:,.0f}
+                    </div>
+                </div>
+                <div>
+                    <div style="color:#fde68a; font-size:0.78rem; font-weight:600;">Tax / Deductions</div>
+                    <div style="color:#ffffff; font-size:1.5rem; font-weight:800; margin-top:4px;">
+                        Rs. {g_tax:,.0f}
+                    </div>
+                </div>
+                <div>
+                    <div style="color:#a5b4fc; font-size:0.78rem; font-weight:600;">Net Balance</div>
+                    <div style="color:{'#6ee7b7' if g_net >= 0 else '#fca5a5'}; font-size:1.5rem; font-weight:800; margin-top:4px;">
+                        Rs. {g_net:,.0f}
+                    </div>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<div class='section-title'>🔍 Search Your Account</div>", unsafe_allow_html=True)
     search = st.text_input("", placeholder="🔍  Enter your Name or IBAN / Account Number...",
                            label_visibility="collapsed")
 
