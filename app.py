@@ -350,36 +350,74 @@ if view_mode == "Audit Manager" and admin_access:
                 st.info("Upload PDFs on the left and click Process to begin.")
 
     with tab3:
-        st.markdown("<div class='section-title'>Synchronized File Archive</div>", unsafe_allow_html=True)
+        st.markdown("<div class='section-title'>📁 Synchronized File Archive</div>", unsafe_allow_html=True)
+        st.markdown("<p style='color:#64748b; font-size:0.9rem;'>Yahan saari upload ki gayi files hain. Delete karne par data Supabase aur local dono jagah se khatam ho jata hai.</p>", unsafe_allow_html=True)
+
         files = get_uploaded_files()
         df_all = load_transactions()
 
         if not files:
-            st.info("No files in archive. Import bank statements to begin.")
+            st.info("Archive empty hai. Import Statements tab se bank PDFs upload karen.")
         else:
             for f in files:
                 fd = df_all[df_all['source_file'] == f]
                 if not fd.empty:
-                    bank = fd['bank'].iloc[0]
-                    count = len(fd)
-                    date_from = fd['transaction_date'].min()
-                    date_to = fd['transaction_date'].max()
-                    acct = fd['account_number'].iloc[0] or 'N/A'
+                    bank_name   = fd['bank'].iloc[0] or 'N/A'
+                    date_from   = fd['transaction_date'].min()
+                    date_to     = fd['transaction_date'].max()
+                    acct_no     = fd['account_number'].iloc[0] or 'N/A'
+                    acct_name   = fd['party_name'].iloc[0] or 'N/A'
+                    total_count = len(fd)
+                    total_in    = fd['credit'].sum()
+                    total_out   = fd['debit'].sum()
 
-                    col_info, col_del = st.columns([5, 1])
-                    with col_info:
+                    col_card, col_btn = st.columns([6, 1])
+                    with col_card:
                         st.markdown(f"""
                         <div class="file-card">
-                            <div class="file-name">{f} &nbsp; <span class="synced-badge">SYNCED</span></div>
-                            <div class="file-meta">
-                                🏦 {bank} &nbsp;|&nbsp; 📋 {count} transactions &nbsp;|&nbsp; 🗓 {date_from} → {date_to}
-                                <br>Account: {acct}
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <div>
+                                    <span class="file-name">📄 {f}</span>
+                                    &nbsp;<span class="synced-badge">✓ SYNCED</span>
+                                </div>
+                                <span style="color:#64748b; font-size:0.8rem;">{total_count} records</span>
+                            </div>
+                            <hr style="border:none; border-top:1px solid #f1f5f9; margin:10px 0;">
+                            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; font-size:0.88rem;">
+                                <div>
+                                    <div style="color:#94a3b8; font-size:0.75rem; font-weight:600; text-transform:uppercase;">Account Holder</div>
+                                    <div style="color:#0f172a; font-weight:700; margin-top:2px;">{acct_name}</div>
+                                </div>
+                                <div>
+                                    <div style="color:#94a3b8; font-size:0.75rem; font-weight:600; text-transform:uppercase;">Account #</div>
+                                    <div style="color:#0f172a; font-family:monospace; margin-top:2px;">{acct_no}</div>
+                                </div>
+                                <div>
+                                    <div style="color:#94a3b8; font-size:0.75rem; font-weight:600; text-transform:uppercase;">Bank</div>
+                                    <div style="color:#0f172a; font-weight:700; margin-top:2px;">🏦 {bank_name}</div>
+                                </div>
+                                <div>
+                                    <div style="color:#94a3b8; font-size:0.75rem; font-weight:600; text-transform:uppercase;">Statement Period</div>
+                                    <div style="color:#0f172a; margin-top:2px;">📅 {date_from} &nbsp;→&nbsp; {date_to}</div>
+                                </div>
+                                <div>
+                                    <div style="color:#94a3b8; font-size:0.75rem; font-weight:600; text-transform:uppercase;">Total In</div>
+                                    <div style="color:#059669; font-weight:700; margin-top:2px;">Rs. {total_in:,.0f}</div>
+                                </div>
+                                <div>
+                                    <div style="color:#94a3b8; font-size:0.75rem; font-weight:600; text-transform:uppercase;">Total Out</div>
+                                    <div style="color:#dc2626; font-weight:700; margin-top:2px;">Rs. {total_out:,.0f}</div>
+                                </div>
                             </div>
                         </div>
                         """, unsafe_allow_html=True)
-                    with col_del:
-                        if st.button("🗑 Remove", key=f"del_{f}"):
+
+                    with col_btn:
+                        st.markdown("<br><br>", unsafe_allow_html=True)
+                        if st.button("🗑️ DELETE", key=f"del_{f}",
+                                     help=f"'{f}' ka poora data Supabase aur local dono se khatam ho jaye ga"):
                             delete_transactions_by_file(f)
+                            st.success(f"✅ '{f}' ka data hata diya gaya — Supabase + Local dono se!")
                             st.rerun()
 
     # === VERIFICATION ===
