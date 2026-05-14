@@ -17,9 +17,10 @@ def is_tax(desc):
         return True
     return False
 
-def parse_meezan(file_path):
+def parse_meezan(file_path, password=""):
     transactions = []
-    with pdfplumber.open(file_path) as pdf:
+    open_kwargs = {"password": password} if password else {}
+    with pdfplumber.open(file_path, **open_kwargs) as pdf:
         for page in pdf.pages:
             tables = page.extract_tables()
             for table in tables:
@@ -45,12 +46,13 @@ def parse_meezan(file_path):
                             })
     return transactions
 
-def parse_alfalah(file_path):
+def parse_alfalah(file_path, password=""):
     transactions = []
     current_tx = None
     prev_balance = None
     
-    with pdfplumber.open(file_path) as pdf:
+    open_kwargs = {"password": password} if password else {}
+    with pdfplumber.open(file_path, **open_kwargs) as pdf:
         for page in pdf.pages:
             text = page.extract_text()
             if not text:
@@ -186,14 +188,15 @@ def extract_party_name(desc, acc_num=""):
             
     return ''
 
-def process_pdf(file_path, bank_choice):
+def process_pdf(file_path, bank_choice, password=""):
+    pwd = password.strip() if password else ""
     if bank_choice.lower() == 'meezan':
-        return parse_meezan(file_path)
+        return parse_meezan(file_path, password=pwd)
     elif bank_choice.lower() == 'alfalah':
-        return parse_alfalah(file_path)
+        return parse_alfalah(file_path, password=pwd)
     else:
         # try both
-        res = parse_meezan(file_path)
+        res = parse_meezan(file_path, password=pwd)
         if not res:
-            res = parse_alfalah(file_path)
+            res = parse_alfalah(file_path, password=pwd)
         return res

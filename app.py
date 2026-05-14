@@ -605,6 +605,20 @@ if view_mode == "Audit Manager" and admin_access:
             st.markdown("<div class='section-title'>Upload Bank PDF</div>", unsafe_allow_html=True)
             bank_choice = st.selectbox("Select Bank Format", ["Meezan", "Alfalah", "Auto-Detect"])
             uploaded_files = st.file_uploader("Choose PDF Files", type="pdf", accept_multiple_files=True, label_visibility="collapsed")
+
+            # Password field for encrypted PDFs
+            st.markdown("""
+            <div style="background:#fffbeb; border:1px solid #fcd34d; border-radius:8px;
+                        padding:10px 14px; margin:10px 0; font-size:0.85rem; color:#78350f;">
+                🔐 <b>Alfalah PDFs are password protected.</b><br>
+                Password usually = your <b>CNIC without dashes</b> (e.g. <code>3520112345671</code>)
+                or <b>Date of Birth</b> (e.g. <code>15051990</code>)
+            </div>
+            """, unsafe_allow_html=True)
+            pdf_password = st.text_input("🔑 PDF Password (if encrypted)",
+                                         placeholder="Enter CNIC / DOB without dashes...",
+                                         type="password")
+
             run_btn = st.button("🚀 Process & Sync to Cloud")
 
             if run_btn:
@@ -612,24 +626,48 @@ if view_mode == "Audit Manager" and admin_access:
                     st.warning("Please select at least one PDF file.")
                 else:
                     all_tx = []
+                    locked_files = []
                     progress_bar = st.progress(0, text="Processing...")
                     for i, uf in enumerate(uploaded_files):
                         try:
                             tmp = f"temp_{uf.name}"
                             with open(tmp, "wb") as f:
                                 f.write(uf.getbuffer())
-                            txs = process_pdf(tmp, bank_choice)
+                            txs = process_pdf(tmp, bank_choice, password=pdf_password)
                             if txs:
                                 for t in txs:
                                     t['source_file'] = uf.name
                                 all_tx.extend(txs)
-                                st.success(f"✓ {uf.name}: {len(txs)} rows found")
+                                st.success(f"✓ {uf.name}: {len(txs)} transactions extracted")
                             else:
-                                st.error(f"✗ {uf.name}: No data extracted. Check format.")
+                                st.warning(f"⚠️ {uf.name}: 0 transactions found — check bank format or PDF content.")
                             os.remove(tmp)
                         except Exception as e:
-                            st.error(f"✗ Error in {uf.name}: {e}")
+                            err_str = str(e).lower()
+                            if os.path.exists(tmp):
+                                os.remove(tmp)
+                            if 'password' in err_str or 'incorrect' in err_str or 'encrypted' in err_str or 'pdfminer' in err_str:
+                                locked_files.append(uf.name)
+                                st.error(f"🔒 **{uf.name}** — Password-protected PDF!  "
+                                         f"Sahi password enter karein aur dobara try karen.")
+                            else:
+                                st.error(f"✗ Error in {uf.name}: {e}")
                         progress_bar.progress((i + 1) / len(uploaded_files))
+
+                    if locked_files:
+                        st.markdown(f"""
+                        <div style="background:#fef2f2; border:1px solid #fca5a5; border-radius:10px;
+                                    padding:16px 20px; margin-top:12px;">
+                            <div style="font-weight:800; color:#7f1d1d; font-size:1rem;">🔐 {len(locked_files)} file(s) unlock nahi hui</div>
+                            <div style="color:#991b1b; font-size:0.88rem; margin-top:6px;">
+                                Neeche password enter karein (CNIC bina dashes ke) aur dobara
+                                <b>Process & Sync to Cloud</b> dabayein.
+                            </div>
+                            <ul style="color:#7f1d1d; font-size:0.83rem; margin-top:8px;">
+                                {''.join(f'<li>{fn}</li>' for fn in locked_files)}
+                            </ul>
+                        </div>
+                        """, unsafe_allow_html=True)
 
                     if all_tx:
                         st.session_state.pending_tx = all_tx
@@ -639,6 +677,15 @@ if view_mode == "Audit Manager" and admin_access:
             st.markdown("<div class='section-title'>Import Summary</div>", unsafe_allow_html=True)
             if uploaded_files:
                 st.markdown(f"**{len(uploaded_files)} file(s) selected** for processing.")
+                st.markdown("""
+                <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:8px;
+                            padding:12px 16px; font-size:0.85rem; color:#166534; margin-top:8px;">
+                    <b>💡 Tips:</b><br>
+                    • Alfalah password = <b>CNIC without dashes</b><br>
+                    • Ya Date of Birth: <b>DDMMYYYY</b> format<br>
+                    • Multiple files ek saath upload ho sakti hain
+                </div>
+                """, unsafe_allow_html=True)
             else:
                 st.info("Upload PDFs on the left and click Process to begin.")
 
