@@ -234,15 +234,60 @@ def extract_party_name(desc, acc_num=""):
             
     return ''
 
+# Known Alfalah PDF passwords to try automatically
+ALFALAH_KNOWN_PASSWORDS = ['715', '']  # add more if needed
+
+def _try_parse(parse_fn, file_path, password):
+    """Try parsing with given password. Returns (result, success)."""
+    try:
+        res = parse_fn(file_path, password=password)
+        return res, True
+    except Exception:
+        return [], False
+
 def process_pdf(file_path, bank_choice, password=""):
     pwd = password.strip() if password else ""
+
+    # Build password list: user's password first, then known fallbacks
+    passwords_to_try = []
+    if pwd:
+        passwords_to_try.append(pwd)
+    for kp in ALFALAH_KNOWN_PASSWORDS:
+        if kp not in passwords_to_try:
+            passwords_to_try.append(kp)
+
     if bank_choice.lower() == 'meezan':
+        for p in passwords_to_try:
+            res, ok = _try_parse(parse_meezan, file_path, p)
+            if ok and res:
+                return res
+            elif ok:
+                return []  # opened but no data
+        # Re-raise last error
         return parse_meezan(file_path, password=pwd)
+
     elif bank_choice.lower() == 'alfalah':
+        for p in passwords_to_try:
+            res, ok = _try_parse(parse_alfalah, file_path, p)
+            if ok and res:
+                return res
+            elif ok:
+                return []
         return parse_alfalah(file_path, password=pwd)
+
     else:
-        # try both
-        res = parse_meezan(file_path, password=pwd)
-        if not res:
-            res = parse_alfalah(file_path, password=pwd)
-        return res
+        # Auto-Detect: try Meezan first (no password), then Alfalah with all passwords
+        res, ok = _try_parse(parse_meezan, file_path, "")
+        if ok and res:
+            return res
+
+        # Try Alfalah with each password
+        for p in passwords_to_try:
+            res, ok = _try_parse(parse_alfalah, file_path, p)
+            if ok and res:
+                return res
+            elif ok:
+                return []
+
+        # Last resort — let exception propagate with user's password
+        return parse_alfalah(file_path, password=pwd)
