@@ -46,11 +46,24 @@ def parse_meezan(file_path, password=""):
                             })
     return transactions
 
+MONTH_MAP = {
+    'jan':'01','feb':'02','mar':'03','apr':'04','may':'05','jun':'06',
+    'jul':'07','aug':'08','sep':'09','oct':'10','nov':'11','dec':'12'
+}
+
+def normalize_alfalah_date(raw_date):
+    """Convert '01 Nov 2024' → '01-11-2024'"""
+    parts = raw_date.strip().split()
+    if len(parts) == 3:
+        day, mon, yr = parts
+        mon_num = MONTH_MAP.get(mon.lower()[:3], '01')
+        return f"{day.zfill(2)}-{mon_num}-{yr}"
+    return raw_date
+
 def parse_alfalah(file_path, password=""):
     transactions = []
-    current_tx = None
     prev_balance = None
-    
+
     open_kwargs = {"password": password} if password else {}
     with pdfplumber.open(file_path, **open_kwargs) as pdf:
         for page in pdf.pages:
@@ -59,32 +72,65 @@ def parse_alfalah(file_path, password=""):
                 continue
             lines = text.split('\n')
             for line in lines:
-                # Look for lines starting with dd-mm-yyyy
-                match = re.match(r'^(\d{2}-\d{2}-\d{4})\s+(.+?)\s+([\d,]+\.?\d*)\s+([\d,]+\.?\d*)$', line.strip())
-                if match:
-                    if current_tx:
-                        prev_balance = finalize_alfalah_tx(current_tx, transactions, prev_balance)
-                    
-                    date = match.group(1)
-                    desc = match.group(2)
-                    amt1 = clean_amount(match.group(3))
-                    amt2 = clean_amount(match.group(4))
-                    
-                    current_tx = {
-                        'date': date,
-                        'desc': desc,
-                        'amt1': amt1,
-                        'amt2': amt2
-                    }
-                else:
-                    # Ignore headers or footers, but keep accumulating lines if we have a current_tx
-                    if current_tx and not line.startswith('Page') and not line.startswith('Statement') and not line.startswith('Account') and not line.startswith('PKR'):
-                        current_tx['desc'] += '\n' + line.strip()
-                        
-    if current_tx:
-        finalize_alfalah_tx(current_tx, transactions, prev_balance)
-        
+                line = line.strip()
+
+                # Opening Balance line
+                ob_match = re.search(r'Opening Balance\s+([\d,]+\.?\d*)', line, re.IGNORECASE)
+                if ob_match:
+                    prev_balance = clean_amount(ob_match.group(1))
+                    continue
+
+                # Transaction line: "DD Mon YYYY  Description [Cheq#]  Amount  Balance"
+                # e.g. "01 Nov 2024 Funds Transfer RAAST 77,000.00 82,472.77"
+                tx_match = re.match(
+                    r'^(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})\s+(.+?)\s+([\d,]+\.\d{2})\s+([-\d,]+\.\d{2})\s*$',
+                    line
+                )
+                if tx_match:
+                    raw_date = tx_match.group(1)
+                    desc     = tx_match.group(2).strip()
+                    amount   = clean_amount(tx_match.group(3))
+                    balance  = clean_amount(tx_match.group(4))
+                    date_str = normalize_alfalah_date(raw_date)
+
+                    debit = 0.0
+                    credit = 0.0
+
+                    if prev_balance is not None:
+                        diff = round(balance - prev_balance, 2)
+                        if abs(diff - amount) < 1.0:
+                            credit = amount   # balance went UP → credit
+                        elif abs(diff + amount) < 1.0:
+                            debit = amount    # balance went DOWN → debit
+                        else:
+                            # fallback: use description keywords
+                            desc_lower = desc.lower()
+                            if any(k in desc_lower for k in ['charges','tax','fee','repayment','withdrawal','purchase','debit']):
+                                debit = amount
+                            else:
+                                credit = amount
+                    else:
+                        desc_lower = desc.lower()
+                        if any(k in desc_lower for k in ['charges','tax','fee','repayment','withdrawal','purchase','debit']):
+                            debit = amount
+                        else:
+                            credit = amount
+
+                    prev_balance = balance
+                    acc_num = extract_account_number(desc)
+                    transactions.append({
+                        'bank': 'Alfalah',
+                        'transaction_date': date_str,
+                        'description': desc,
+                        'debit': debit,
+                        'credit': credit,
+                        'party_name': extract_party_name(desc, acc_num),
+                        'account_number': acc_num,
+                        'is_tax': is_tax(desc)
+                    })
+
     return transactions
+
 
 def extract_account_number(desc):
     # Try to find IBAN
