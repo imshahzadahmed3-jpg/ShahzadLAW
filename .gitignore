@@ -1,0 +1,8 @@
+.env
+transactions.db
+venv/
+__pycache__/
+*.pdf
+*.docx
+temp_*
+.DS_Store
