@@ -390,6 +390,91 @@ hr, .section-divider {
 
 /* ── FORM ELEMENTS ──────────────────────────────────── */
 .stForm { border: 1px solid #e5e7eb !important; border-radius: 12px !important; }
+
+/* ── MOBILE RESPONSIVE ──────────────────────────────── */
+
+/* Ledger Summary Grid — 2 cols on mobile, 4 on desktop */
+.ledger-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 20px;
+}
+
+@media (max-width: 768px) {
+    /* Main container padding */
+    .main .block-container {
+        padding: 1rem 1rem !important;
+    }
+
+    /* Page header smaller on mobile */
+    .page-header {
+        padding: 20px 18px !important;
+        border-radius: 12px !important;
+        margin-bottom: 16px !important;
+    }
+    .page-header h1 {
+        font-size: 1.3rem !important;
+    }
+    .page-header p {
+        font-size: 0.82rem !important;
+    }
+
+    /* KPI Cards — tighter on mobile */
+    .kpi-card {
+        padding: 16px 14px !important;
+    }
+    .kpi-card .kpi-value {
+        font-size: 1.35rem !important;
+    }
+
+    /* Ledger summary 2 cols on mobile */
+    .ledger-grid {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 12px !important;
+    }
+
+    /* Tabs — scrollable on mobile */
+    .stTabs [data-baseweb="tab-list"] {
+        overflow-x: auto !important;
+        flex-wrap: nowrap !important;
+        padding: 4px !important;
+    }
+    .stTabs [data-baseweb="tab"] {
+        font-size: 0.78rem !important;
+        padding: 8px 12px !important;
+        white-space: nowrap !important;
+    }
+
+    /* File cards full width */
+    .file-card {
+        padding: 14px 14px !important;
+    }
+    .file-card .file-name {
+        font-size: 0.88rem !important;
+    }
+
+    /* Buttons */
+    .stButton > button {
+        height: 42px !important;
+        font-size: 0.85rem !important;
+    }
+
+    /* Section titles */
+    .section-title {
+        font-size: 0.95rem !important;
+    }
+
+    /* Hide shimmer animation on mobile for performance */
+    .page-header::before {
+        display: none !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .page-header h1 { font-size: 1.1rem !important; }
+    .kpi-card .kpi-value { font-size: 1.1rem !important; }
+    .ledger-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -837,41 +922,43 @@ elif view_mode == "Investor Portal":
         total_rows  = len(df_all)
 
         st.markdown(f"""
-        <div style="background: linear-gradient(135deg, #0d1b2a, #1a3a5c);
-                    border-radius: 12px; padding: 24px 30px; margin-bottom: 24px;
-                    border: 1px solid #2d4a6e;">
-            <div style="color:#93c5fd; font-size:0.8rem; font-weight:700;
-                        text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;">
+        <div style="background: linear-gradient(135deg, #0a0f1e, #0d2a1a);
+                    border-radius: 14px; padding: 20px 22px; margin-bottom: 24px;
+                    border: 1px solid rgba(0,168,107,0.3);
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
+            <div style="color:#00d68f; font-size:0.75rem; font-weight:700;
+                        text-transform:uppercase; letter-spacing:1px; margin-bottom:14px;">
                 📊 Ledger Summary — {total_files} Files | {total_rows:,} Transactions
             </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:20px;">
-                <div>
-                    <div style="color:#6ee7b7; font-size:0.78rem; font-weight:600;">💚 Total Credit (In)</div>
-                    <div style="color:#6ee7b7; font-size:1.5rem; font-weight:800; margin-top:4px;">
+            <div class="ledger-grid">
+                <div style="border-right:1px solid rgba(255,255,255,0.08); padding-right:12px;">
+                    <div style="color:#6ee7b7; font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px;">💚 Total Credit</div>
+                    <div style="color:#6ee7b7; font-size:1.4rem; font-weight:900; margin-top:6px; line-height:1.1;">
                         Rs. {g_in:,.0f}
                     </div>
                 </div>
-                <div>
-                    <div style="color:#fca5a5; font-size:0.78rem; font-weight:600;">🔴 Total Debit (Out)</div>
-                    <div style="color:#fca5a5; font-size:1.5rem; font-weight:800; margin-top:4px;">
+                <div style="border-right:1px solid rgba(255,255,255,0.08); padding-right:12px;">
+                    <div style="color:#fca5a5; font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px;">🔴 Total Debit</div>
+                    <div style="color:#fca5a5; font-size:1.4rem; font-weight:900; margin-top:6px; line-height:1.1;">
                         Rs. {g_out:,.0f}
                     </div>
                 </div>
-                <div>
-                    <div style="color:#fde68a; font-size:0.78rem; font-weight:600;">Tax / Deductions</div>
-                    <div style="color:#ffffff; font-size:1.5rem; font-weight:800; margin-top:4px;">
+                <div style="border-right:1px solid rgba(255,255,255,0.08); padding-right:12px;">
+                    <div style="color:#fde68a; font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px;">🟡 Tax / Deductions</div>
+                    <div style="color:#fde68a; font-size:1.4rem; font-weight:900; margin-top:6px; line-height:1.1;">
                         Rs. {g_tax:,.0f}
                     </div>
                 </div>
                 <div>
-                    <div style="color:#a5b4fc; font-size:0.78rem; font-weight:600;">Net Balance</div>
-                    <div style="color:{'#6ee7b7' if g_net >= 0 else '#fca5a5'}; font-size:1.5rem; font-weight:800; margin-top:4px;">
+                    <div style="color:#a5b4fc; font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.8px;">⚡ Net Balance</div>
+                    <div style="color:{'#6ee7b7' if g_net >= 0 else '#fca5a5'}; font-size:1.4rem; font-weight:900; margin-top:6px; line-height:1.1;">
                         Rs. {g_net:,.0f}
                     </div>
                 </div>
             </div>
         </div>
         """, unsafe_allow_html=True)
+
 
     st.markdown("<div class='section-title'>🔍 Search Your Account</div>", unsafe_allow_html=True)
     search = st.text_input("", placeholder="🔍  Enter your Name or IBAN / Account Number...",
