@@ -52,12 +52,14 @@ MONTH_MAP = {
 }
 
 def normalize_alfalah_date(raw_date):
-    """Convert '01 Nov 2024' → '01-11-2024'"""
-    parts = raw_date.strip().split()
+    """Convert various formats ('01 Nov 2024', '01-11-2024', '01/11/2024') → '01-11-2024'"""
+    d = raw_date.strip().replace('/', '-').replace(' ', '-')
+    parts = d.split('-')
     if len(parts) == 3:
         day, mon, yr = parts
-        mon_num = MONTH_MAP.get(mon.lower()[:3], '01')
-        return f"{day.zfill(2)}-{mon_num}-{yr}"
+        if not mon.isdigit():
+            mon = MONTH_MAP.get(mon.lower()[:3], '01')
+        return f"{day.zfill(2)}-{mon.zfill(2)}-{yr}"
     return raw_date
 
 def clean_name_spaces(name):
@@ -130,11 +132,18 @@ def parse_alfalah(file_path, password=""):
                     prev_balance = clean_amount(ob_match.group(1))
                     continue
 
-                # Transaction line: "DD Mon YYYY  Description  Amount  Balance"
-                tx_match = re.match(
-                    r'^(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})\s+(.+?)\s+([\d,]+\.\d{2})\s+([-\d,]+\.\d{2})\s*$',
+                # Flexible Transaction line: "DATE  DESCRIPTION...  AMOUNT  BALANCE"
+                # Pattern: Starts with date, ends with two amounts
+                # Date patterns: "01 Nov 2024" or "01-11-2024" or "01/11/2024"
+                date_p = r'(\d{1,2}[\s\-/][A-Za-z0-9]{2,3}[\s\-/]\d{2,4})'
+                # Amount patterns: "1,234.56" or "1234.00" or even "1000" (sometimes)
+                amt_p = r'([\d,]+\.?\d*)'
+                
+                tx_match = re.search(
+                    f'^{date_p}\\s+(.+?)\\s+{amt_p}\\s+{amt_p}\\s*$',
                     line
                 )
+                
                 if tx_match:
                     raw_date = tx_match.group(1)
                     desc     = tx_match.group(2).strip()
