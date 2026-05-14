@@ -13,163 +13,386 @@ st.set_page_config(page_title="ShahzadLAW Audit", page_icon="⚖️", layout="wi
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+/* ═══════════════════════════════════════════════════════
+   ShahzadLAW — Holographic Glassmorphism Theme v2.0
+   Pure White · Emerald Green · High Contrast · Accessible
+═══════════════════════════════════════════════════════ */
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+/* ── CSS VARIABLES ─────────────────────────────────── */
+:root {
+  --bg-main:       #ffffff;
+  --bg-surface:    #f8fafb;
+  --text-primary:  #1a1a1a;
+  --text-secondary:#2d3748;
+  --text-muted:    #4a5568;
+  --emerald:       #00a86b;
+  --emerald-dark:  #007a4d;
+  --emerald-light: #00d68f;
+  --navy:          #0a0f1e;
+  --navy-mid:      #0d1b2a;
+  --gold:          #d4a017;
+  --red:           #dc2626;
+  --blue-accent:   #3b82f6;
+
+  --holo-gradient: linear-gradient(135deg, #0a0f1e 0%, #0d3b2a 40%, #001a0f 100%);
+  --emerald-glow:  0 0 20px rgba(0,168,107,0.4), 0 0 40px rgba(0,168,107,0.15);
+  --card-shadow:   0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
+  --glass-border:  linear-gradient(135deg, rgba(0,168,107,0.4), rgba(59,130,246,0.3), rgba(0,168,107,0.2));
+}
+
+/* ── GLOBAL BASE ────────────────────────────────────── */
 * { font-family: 'Inter', sans-serif !important; box-sizing: border-box; }
 
-/* Remove all streamlit default overrides that break text */
-.stApp { background: #f0f4f8 !important; }
+/* ── APP BACKGROUND ─────────────────────────────────── */
+.stApp { background: #ffffff !important; }
 
-/* Fix main area - force dark text everywhere */
-.main .block-container { 
-    background: #f0f4f8 !important; 
-    padding: 2rem 3rem;
-    color: #1a202c !important;
+.main .block-container {
+    background: #ffffff !important;
+    padding: 2rem 3rem !important;
+    max-width: 1400px;
 }
+
+/* Force deep black on ALL main content text — no exceptions */
 .main .block-container p,
 .main .block-container span,
 .main .block-container div,
-.main .block-container label { 
-    color: #1a202c !important; 
+.main .block-container label,
+.main .block-container li,
+.main .block-container td,
+.main .block-container th {
+    color: var(--text-primary) !important;
 }
 
-/* Sidebar */
+/* ── SIDEBAR ─────────────────────────────────────────── */
 [data-testid="stSidebar"] > div:first-child {
-    background: linear-gradient(180deg, #0d1b2a 0%, #1a3a5c 100%) !important;
+    background: var(--holo-gradient) !important;
     padding: 2rem 1.5rem;
+    border-right: 1px solid rgba(0,168,107,0.3);
 }
 [data-testid="stSidebar"] * { color: #ffffff !important; }
-[data-testid="stSidebar"] .stRadio label { 
-    color: #cbd5e0 !important; 
+[data-testid="stSidebar"] .stRadio label {
+    color: #a0aec0 !important;
     font-size: 0.9rem;
+    font-weight: 500;
+    transition: color 0.2s;
 }
 [data-testid="stSidebar"] .stRadio label:hover { color: #ffffff !important; }
+[data-testid="stSidebar"] .stRadio [aria-checked="true"] + label,
+[data-testid="stSidebar"] .stRadio [data-checked="true"] ~ div { color: #00d68f !important; }
 
-/* Page Header Banner */
+/* Sidebar brand glow */
+[data-testid="stSidebar"] h3 {
+    background: linear-gradient(135deg, #00a86b, #3b82f6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 1.3rem !important;
+    font-weight: 800 !important;
+}
+
+/* ── PAGE HEADER BANNER (Holographic) ───────────────── */
 .page-header {
-    background: linear-gradient(135deg, #0d1b2a 0%, #1a3a5c 100%);
-    padding: 30px 40px;
-    border-radius: 12px;
-    margin-bottom: 30px;
-    border-left: 6px solid #d4a017;
+    background: var(--holo-gradient);
+    padding: 32px 40px;
+    border-radius: 16px;
+    margin-bottom: 28px;
+    position: relative;
+    overflow: hidden;
+    /* Holographic border via box-shadow */
+    box-shadow:
+        0 0 0 1px rgba(0,168,107,0.5),
+        0 0 30px rgba(0,168,107,0.15),
+        0 8px 32px rgba(0,0,0,0.2);
+}
+/* Holographic shimmer overlay */
+.page-header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        105deg,
+        transparent 40%,
+        rgba(0,168,107,0.08) 50%,
+        rgba(59,130,246,0.06) 55%,
+        transparent 65%
+    );
+    animation: shimmer 4s infinite;
+}
+@keyframes shimmer {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(200%); }
 }
 .page-header h1 {
     color: #ffffff !important;
     font-size: 2rem;
-    font-weight: 800;
-    margin: 0 0 5px 0;
+    font-weight: 900;
+    margin: 0 0 6px 0;
     letter-spacing: -0.5px;
+    text-shadow: 0 0 20px rgba(0,168,107,0.5);
+    position: relative;
 }
 .page-header p {
-    color: #93c5fd !important;
+    color: #00d68f !important;
     margin: 0;
     font-size: 0.95rem;
+    font-weight: 500;
+    position: relative;
 }
 
-/* Metric Cards */
+/* ── GLASSMORPHISM KPI CARDS ─────────────────────────── */
 .kpi-card {
-    background: #ffffff;
-    border-radius: 10px;
-    padding: 24px;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 14px;
+    padding: 24px 20px;
     margin-bottom: 16px;
-    border-top: 4px solid #1a3a5c;
+    position: relative;
+    /* Holographic gradient border using pseudo-element trick */
+    border: 1px solid transparent;
+    background-clip: padding-box;
+    box-shadow: var(--card-shadow);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.kpi-card::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 15px;
+    background: linear-gradient(135deg, rgba(0,168,107,0.5), rgba(59,130,246,0.3), rgba(0,168,107,0.2));
+    z-index: -1;
+}
+.kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 0 16px rgba(0,168,107,0.12);
 }
 .kpi-card .kpi-label {
-    color: #718096 !important;
-    font-size: 0.78rem;
+    color: var(--text-muted) !important;
+    font-size: 0.72rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 8px;
+    letter-spacing: 1.2px;
+    margin-bottom: 10px;
 }
 .kpi-card .kpi-value {
-    font-size: 1.9rem;
-    font-weight: 800;
+    font-size: 1.85rem;
+    font-weight: 900;
     margin: 0;
     line-height: 1;
 }
 
-/* File Archive Card */
+/* ── GLASSMORPHISM FILE CARDS ────────────────────────── */
 .file-card {
-    background: #ffffff;
-    border-radius: 8px;
-    padding: 18px 22px;
-    margin-bottom: 12px;
-    border: 1px solid #e2e8f0;
-    border-left: 5px solid #d4a017;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    background: rgba(255,255,255,0.9);
+    backdrop-filter: blur(8px);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 14px;
+    border: 1px solid transparent;
+    background-clip: padding-box;
+    box-shadow: var(--card-shadow);
+    position: relative;
+    transition: transform 0.2s;
 }
-.file-card .file-name { 
-    color: #0d1b2a !important;
-    font-weight: 700;
+.file-card::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: 13px;
+    background: linear-gradient(135deg, rgba(0,168,107,0.6), rgba(59,130,246,0.25));
+    z-index: -1;
+}
+.file-card:hover { transform: translateY(-1px); }
+.file-card .file-name {
+    color: var(--navy-mid) !important;
+    font-weight: 800;
     font-size: 1rem;
 }
-.file-card .file-meta { 
-    color: #718096 !important;
+.file-card .file-meta {
+    color: var(--text-muted) !important;
     font-size: 0.85rem;
     margin-top: 4px;
 }
 .synced-badge {
     display: inline-block;
-    background: #d1fae5;
-    color: #065f46 !important;
-    padding: 2px 10px;
+    background: linear-gradient(135deg, #00a86b, #007a4d);
+    color: #ffffff !important;
+    padding: 3px 12px;
     border-radius: 20px;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     font-weight: 700;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(0,168,107,0.3);
 }
 
-/* Section headings */
+/* ── SECTION TITLES ─────────────────────────────────── */
 .section-title {
-    color: #0d1b2a !important;
-    font-size: 1.1rem;
-    font-weight: 700;
-    margin-bottom: 16px;
-    padding-bottom: 8px;
-    border-bottom: 2px solid #e2e8f0;
+    color: var(--navy-mid) !important;
+    font-size: 1.05rem;
+    font-weight: 800;
+    margin-bottom: 18px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid transparent;
+    background: linear-gradient(white, white) padding-box,
+                linear-gradient(90deg, #00a86b, #3b82f6) border-box;
+    border-image: linear-gradient(90deg, #00a86b, #3b82f6) 1;
+    border-bottom-width: 2px;
+    border-bottom-style: solid;
 }
 
-/* Buttons */
+/* ── BUTTONS ─────────────────────────────────────────── */
 .stButton > button {
-    background: #1a3a5c !important;
-    color: white !important;
-    border: none !important;
-    border-radius: 6px !important;
+    background: linear-gradient(135deg, #0a0f1e, #0d1b2a) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(0,168,107,0.4) !important;
+    border-radius: 10px !important;
     font-weight: 700 !important;
-    height: 44px !important;
+    height: 46px !important;
     font-size: 0.9rem !important;
     width: 100%;
-    transition: background 0.2s;
+    transition: all 0.25s ease !important;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.25) !important;
+    letter-spacing: 0.4px !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+.stButton > button::before {
+    content: '' !important;
+    position: absolute !important;
+    inset: 0 !important;
+    background: linear-gradient(135deg, transparent, rgba(0,168,107,0.1)) !important;
+    opacity: 0 !important;
+    transition: opacity 0.25s !important;
 }
 .stButton > button:hover {
-    background: #0d1b2a !important;
+    border-color: rgba(0,168,107,0.9) !important;
+    box-shadow:
+        0 0 0 1px rgba(0,168,107,0.6),
+        0 0 20px rgba(0,168,107,0.35),
+        0 6px 20px rgba(0,0,0,0.3) !important;
+    transform: translateY(-2px) !important;
 }
 
-/* Input fields */
-.stTextInput > div > div > input,
+/* ── TABS ────────────────────────────────────────────── */
+.stTabs [data-baseweb="tab-list"] {
+    background: #f0f4f8 !important;
+    border-radius: 12px !important;
+    padding: 5px !important;
+    gap: 4px !important;
+    border: 1px solid #d1d5db !important;
+    box-shadow: inset 0 1px 4px rgba(0,0,0,0.06) !important;
+}
+.stTabs [data-baseweb="tab"] {
+    background: transparent !important;
+    color: #374151 !important;
+    border-radius: 9px !important;
+    font-weight: 600 !important;
+    font-size: 0.88rem !important;
+    padding: 10px 22px !important;
+    border: none !important;
+    transition: all 0.2s ease !important;
+    letter-spacing: 0.2px !important;
+}
+.stTabs [data-baseweb="tab"]:hover {
+    background: #e5e7eb !important;
+    color: #111827 !important;
+}
+.stTabs [aria-selected="true"] {
+    background: linear-gradient(135deg, #0a0f1e, #0d2a1a) !important;
+    color: #00d68f !important;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.25), 0 0 8px rgba(0,168,107,0.2) !important;
+    border-bottom: 2px solid #00a86b !important;
+}
+.stTabs [data-baseweb="tab-highlight"],
+.stTabs [data-baseweb="tab-border"] { display: none !important; }
+
+/* ── INPUT FIELDS ───────────────────────────────────── */
+.stTextInput > div > div > input {
+    background: #ffffff !important;
+    color: #1a1a1a !important;
+    border: 1.5px solid #d1d5db !important;
+    border-radius: 10px !important;
+    font-size: 0.95rem !important;
+    padding: 10px 16px !important;
+    transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+.stTextInput > div > div > input:focus {
+    border-color: #00a86b !important;
+    box-shadow: 0 0 0 3px rgba(0,168,107,0.15) !important;
+}
+.stTextInput > div > div > input::placeholder { color: #9ca3af !important; }
 .stSelectbox > div > div > div {
     background: #ffffff !important;
-    color: #1a202c !important;
-    border: 1px solid #cbd5e0 !important;
-    border-radius: 6px !important;
+    color: #1a1a1a !important;
+    border: 1.5px solid #d1d5db !important;
+    border-radius: 10px !important;
 }
 
-/* Info/Warning boxes */
-.stInfo { background: #dbeafe !important; border-radius: 6px !important; }
-.stInfo p { color: #1e40af !important; }
-.stWarning p { color: #92400e !important; }
-.stSuccess p { color: #065f46 !important; }
-
-/* Dividers */
-.section-divider {
-    border: none;
-    border-top: 1px solid #e2e8f0;
-    margin: 24px 0;
+/* ── DATAFRAME ──────────────────────────────────────── */
+.stDataFrame { border-radius: 12px; overflow: hidden; }
+.stDataFrame thead th {
+    background: linear-gradient(135deg, #0a0f1e, #0d2a1a) !important;
+    color: #00d68f !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.3px !important;
 }
+.stDataFrame tbody tr:nth-child(even) { background: #f8fafb !important; }
+.stDataFrame tbody tr:hover { background: #f0fdf9 !important; }
+
+/* ── ALERTS / INFO BOXES ────────────────────────────── */
+.stAlert, [data-testid="stAlert"] {
+    border-radius: 10px !important;
+    border-left-width: 4px !important;
+}
+.stInfo, [data-testid="stAlert"][kind="info"] {
+    background: #eff6ff !important;
+    border-left-color: #3b82f6 !important;
+}
+.stInfo p, .stInfo span { color: #1e3a8a !important; }
+.stWarning, [data-testid="stAlert"][kind="warning"] {
+    background: #fffbeb !important;
+    border-left-color: #d97706 !important;
+}
+.stWarning p, .stWarning span { color: #78350f !important; }
+.stSuccess, [data-testid="stAlert"][kind="success"] {
+    background: #f0fdf4 !important;
+    border-left-color: #00a86b !important;
+}
+.stSuccess p, .stSuccess span { color: #065f46 !important; }
+.stError, [data-testid="stAlert"][kind="error"] {
+    background: #fef2f2 !important;
+    border-left-color: #dc2626 !important;
+}
+.stError p, .stError span { color: #7f1d1d !important; }
+
+/* ── PROGRESS BAR ───────────────────────────────────── */
+[data-testid="stProgress"] > div > div {
+    background: linear-gradient(90deg, #00a86b, #3b82f6) !important;
+    border-radius: 4px !important;
+}
+
+/* ── SCROLLBAR ──────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #00a86b, #3b82f6);
+    border-radius: 4px;
+}
+
+/* ── DIVIDERS ───────────────────────────────────────── */
+hr, .section-divider {
+    border: none !important;
+    height: 1px !important;
+    background: linear-gradient(90deg, transparent, #d1d5db, transparent) !important;
+    margin: 24px 0 !important;
+}
+
+/* ── FORM ELEMENTS ──────────────────────────────────── */
+.stForm { border: 1px solid #e5e7eb !important; border-radius: 12px !important; }
 </style>
 """, unsafe_allow_html=True)
+
 
 # Session State
 if 'pending_tx' not in st.session_state:
@@ -576,14 +799,14 @@ elif view_mode == "Investor Portal":
             </div>
             <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:20px;">
                 <div>
-                    <div style="color:#6ee7b7; font-size:0.78rem; font-weight:600;">Total Received (In)</div>
-                    <div style="color:#ffffff; font-size:1.5rem; font-weight:800; margin-top:4px;">
+                    <div style="color:#6ee7b7; font-size:0.78rem; font-weight:600;">💚 Total Credit (In)</div>
+                    <div style="color:#6ee7b7; font-size:1.5rem; font-weight:800; margin-top:4px;">
                         Rs. {g_in:,.0f}
                     </div>
                 </div>
                 <div>
-                    <div style="color:#fca5a5; font-size:0.78rem; font-weight:600;">Total Paid Out</div>
-                    <div style="color:#ffffff; font-size:1.5rem; font-weight:800; margin-top:4px;">
+                    <div style="color:#fca5a5; font-size:0.78rem; font-weight:600;">🔴 Total Debit (Out)</div>
+                    <div style="color:#fca5a5; font-size:1.5rem; font-weight:800; margin-top:4px;">
                         Rs. {g_out:,.0f}
                     </div>
                 </div>
@@ -631,12 +854,12 @@ elif view_mode == "Investor Portal":
                 st.markdown("<div class='section-title'>Account Summary</div>", unsafe_allow_html=True)
                 c1, c2, c3, c4 = st.columns(4)
                 c1.markdown(f"""<div class="kpi-card" style="border-top-color:#059669;">
-                    <div class="kpi-label">Total Received</div>
-                    <div class="kpi-value" style="color:#059669;">Rs.{in_v:,.0f}</div>
+                    <div class="kpi-label">💚 Total Credit (In)</div>
+                    <div class="kpi-value" style="color:#059669;">Rs. {in_v:,.0f}</div>
                 </div>""", unsafe_allow_html=True)
                 c2.markdown(f"""<div class="kpi-card" style="border-top-color:#dc2626;">
-                    <div class="kpi-label">Total Paid Out</div>
-                    <div class="kpi-value" style="color:#dc2626;">Rs.{out_v:,.0f}</div>
+                    <div class="kpi-label">🔴 Total Debit (Out)</div>
+                    <div class="kpi-value" style="color:#dc2626;">Rs. {out_v:,.0f}</div>
                 </div>""", unsafe_allow_html=True)
                 c3.markdown(f"""<div class="kpi-card" style="border-top-color:#d97706;">
                     <div class="kpi-label">Tax / Deductions</div>
