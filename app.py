@@ -233,4 +233,3 @@ if not df.empty:
             st.download_button("Download .docx", f, file_name="Report.docx")
 else:
     st.info("Welcome! Start by uploading a bank statement in the sidebar.")
-ally from the sidebar.")
