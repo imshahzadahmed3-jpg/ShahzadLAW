@@ -912,6 +912,15 @@ elif view_mode == "Investor Portal":
     # Grand Total Banner (always visible on front page)
     df_all = load_transactions()
     if not df_all.empty:
+        # Smart Date Parsing & Sorting
+        def parse_smart_date(d):
+            if pd.isna(d) or d == '': return pd.NaT
+            try: return pd.to_datetime(d, dayfirst=True)
+            except: 
+                try: return pd.to_datetime(d)
+                except: return pd.NaT
+        df_all['date_obj'] = df_all['transaction_date'].apply(parse_smart_date)
+        df_all = df_all.sort_values('date_obj', ascending=False)
         all_calc = df_all[df_all['is_tax'] == False]
         all_tax  = df_all[df_all['is_tax'] == True]
         g_in  = all_calc['credit'].sum()
@@ -960,24 +969,57 @@ elif view_mode == "Investor Portal":
         """, unsafe_allow_html=True)
 
 
-    st.markdown("<div class='section-title'>🔍 Search Your Account</div>", unsafe_allow_html=True)
-    search = st.text_input("", placeholder="🔍  Enter your Name or IBAN / Account Number...",
-                           label_visibility="collapsed")
+    st.markdown("<div class='section-title'>🔍 Filter & Search</div>", unsafe_allow_html=True)
+    f_col1, f_col2, f_col3 = st.columns([1.5, 1, 1])
+    with f_col1:
+        search = st.text_input("", placeholder="🔍 Name, Account #, or keyword...", label_visibility="collapsed")
+    with f_col2:
+        bank_list = ["All Banks"] + sorted(df_all['bank'].unique().tolist()) if not df_all.empty else ["All Banks"]
+        bank_filter = st.selectbox("Bank", bank_list, label_visibility="collapsed")
+    with f_col3:
+        if not df_all.empty and not df_all['date_obj'].isna().all():
+            min_dt = df_all['date_obj'].min()
+            max_dt = df_all['date_obj'].max()
+            date_range = st.date_input("Range", [min_dt, max_dt], label_visibility="collapsed")
+        else:
+            date_range = None
 
     if search:
-        df = load_transactions()
+        df = df_all.copy()
         if df.empty:
             st.info("The ledger is currently empty. Please contact the Administrator.")
         else:
+            # Apply Search
             mask = (
                 df['party_name'].str.contains(search, case=False, na=False) |
-                df['account_number'].str.contains(search, case=False, na=False)
+                df['account_number'].str.contains(search, case=False, na=False) |
+                df['description'].str.contains(search, case=False, na=False)
             )
-            filtered = df[mask]
+            df = df[mask]
+            
+            # Apply Bank Filter
+            if bank_filter != "All Banks":
+                df = df[df['bank'] == bank_filter]
+                
+            # Apply Date Filter
+            if isinstance(date_range, (list, tuple)) and len(date_range) == 2:
+                s_dt = pd.to_datetime(date_range[0])
+                e_dt = pd.to_datetime(date_range[1])
+                df = df[(df['date_obj'] >= s_dt) & (df['date_obj'] <= e_dt)]
+
+            filtered = df
 
             if filtered.empty:
                 st.warning("No records found. Please check your name or account number and try again.")
             else:
+                # Group selection if multiple accounts match
+                acc_list = filtered['account_number'].unique()
+                if len(acc_list) > 1:
+                    st.warning(f"Found {len(acc_list)} accounts for '{search}'.")
+                    selected_acc = st.radio("Choose Account to Audit", ["Combined View"] + list(acc_list), horizontal=True)
+                    if selected_acc != "Combined View":
+                        filtered = filtered[filtered['account_number'] == selected_acc]
+
                 calc = filtered[filtered['is_tax'] == False]
                 tax_rows = filtered[filtered['is_tax'] == True]
                 in_v = calc['credit'].sum()

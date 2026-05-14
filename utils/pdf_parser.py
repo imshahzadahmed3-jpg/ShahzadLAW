@@ -60,12 +60,62 @@ def normalize_alfalah_date(raw_date):
         return f"{day.zfill(2)}-{mon_num}-{yr}"
     return raw_date
 
+def clean_name_spaces(name):
+    """Fix garbled PDF name like 'SHA HZAD AHMED' → 'SHAHZAD AHMED' using common patterns."""
+    if not name:
+        return name
+    # Remove excess spaces within words (2+ char word parts that should be joined)
+    # Only join if both parts are short (likely split from one word)
+    import re as _re
+    parts = name.strip().split()
+    result = []
+    i = 0
+    while i < len(parts):
+        if (i + 1 < len(parts) and
+                len(parts[i]) <= 4 and len(parts[i+1]) <= 5 and
+                parts[i].isalpha() and parts[i+1].isalpha()):
+            result.append(parts[i] + parts[i+1])
+            i += 2
+        else:
+            result.append(parts[i])
+            i += 1
+    return ' '.join(result).title()
+
+def extract_header_info(text):
+    """Extract account holder name and IBAN from Alfalah statement header."""
+    holder_name = ''
+    holder_iban = ''
+    holder_account = ''
+
+    # Title Of Account pattern
+    m = re.search(r'Title Of Account\s+([A-Z][A-Z\s]+?)(?:\s{2,}|\s+IBAN|\s+Nature|\n)', text, re.IGNORECASE)
+    if m:
+        holder_name = m.group(1).strip().title()
+
+    # IBAN pattern
+    m = re.search(r'IBAN\s+(PK\d{2}[A-Z]{4}[0-9A-Z]+)', text, re.IGNORECASE)
+    if m:
+        holder_iban = m.group(1).strip()
+
+    # Account number pattern (from "Account # 0 1 9 8 - 1 0 0 7 9 1 6 7 1 5" — spaced digits)
+    m = re.search(r'Account\s*#\s*([\d\s\-]+)', text)
+    if m:
+        holder_account = re.sub(r'[\s\-]', '', m.group(1)).strip()
+
+    return holder_name, holder_iban or holder_account
+
 def parse_alfalah(file_path, password=""):
     transactions = []
     prev_balance = None
+    holder_name  = ''
+    holder_id    = ''
 
     open_kwargs = {"password": password} if password else {}
     with pdfplumber.open(file_path, **open_kwargs) as pdf:
+        # Extract account holder from first page header
+        first_text = pdf.pages[0].extract_text() or ''
+        holder_name, holder_id = extract_header_info(first_text)
+
         for page in pdf.pages:
             text = page.extract_text()
             if not text:
@@ -80,8 +130,7 @@ def parse_alfalah(file_path, password=""):
                     prev_balance = clean_amount(ob_match.group(1))
                     continue
 
-                # Transaction line: "DD Mon YYYY  Description [Cheq#]  Amount  Balance"
-                # e.g. "01 Nov 2024 Funds Transfer RAAST 77,000.00 82,472.77"
+                # Transaction line: "DD Mon YYYY  Description  Amount  Balance"
                 tx_match = re.match(
                     r'^(\d{1,2}\s+[A-Za-z]{3}\s+\d{4})\s+(.+?)\s+([\d,]+\.\d{2})\s+([-\d,]+\.\d{2})\s*$',
                     line
@@ -99,33 +148,35 @@ def parse_alfalah(file_path, password=""):
                     if prev_balance is not None:
                         diff = round(balance - prev_balance, 2)
                         if abs(diff - amount) < 1.0:
-                            credit = amount   # balance went UP → credit
+                            credit = amount
                         elif abs(diff + amount) < 1.0:
-                            debit = amount    # balance went DOWN → debit
+                            debit = amount
                         else:
-                            # fallback: use description keywords
                             desc_lower = desc.lower()
-                            if any(k in desc_lower for k in ['charges','tax','fee','repayment','withdrawal','purchase','debit']):
+                            if any(k in desc_lower for k in ['charges','tax','fee','repayment','withdrawal','purchase','debit','loan']):
                                 debit = amount
                             else:
                                 credit = amount
                     else:
                         desc_lower = desc.lower()
-                        if any(k in desc_lower for k in ['charges','tax','fee','repayment','withdrawal','purchase','debit']):
+                        if any(k in desc_lower for k in ['charges','tax','fee','repayment','withdrawal','purchase','debit','loan']):
                             debit = amount
                         else:
                             credit = amount
 
                     prev_balance = balance
-                    acc_num = extract_account_number(desc)
+
+                    # Use account holder as primary party
+                    party = holder_name if holder_name else extract_party_name(desc, holder_id)
+
                     transactions.append({
                         'bank': 'Alfalah',
                         'transaction_date': date_str,
                         'description': desc,
                         'debit': debit,
                         'credit': credit,
-                        'party_name': extract_party_name(desc, acc_num),
-                        'account_number': acc_num,
+                        'party_name': party,
+                        'account_number': holder_id,
                         'is_tax': is_tax(desc)
                     })
 
