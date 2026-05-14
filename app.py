@@ -286,8 +286,21 @@ if view_mode == "Audit Manager" and admin_access:
 
     # === VERIFICATION ===
     if st.session_state.pending_tx:
-        st.markdown("<hr class='section-divider'>", unsafe_allow_html=True)
-        st.markdown("<div class='section-title'>🔍 Profile Verification</div>", unsafe_allow_html=True)
+        total_found = len(st.session_state.pending_tx)
+        # Big clear banner
+        st.markdown(f"""
+        <div style="background: linear-gradient(135deg, #065f46, #059669); color:white;
+                    padding: 24px 30px; border-radius: 12px; margin: 20px 0;">
+            <div style="font-size:1.4rem; font-weight:800;">📋 STEP 2 OF 2 — Name Verification</div>
+            <div style="margin-top:8px; font-size:1rem; opacity:0.9;">
+                ✅ <b>{total_found} transactions</b> extracted from PDF successfully!
+            </div>
+            <div style="margin-top:6px; font-size:0.9rem; opacity:0.8;">
+                Neeche diye gaye names check karen. Sahi hon toh seedha
+                <b>"SAVE & ADD TO LEDGER"</b> dabayein.
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
         unique_ids = {t['account_number']: t['party_name']
                       for t in st.session_state.pending_tx if t['account_number']}
@@ -301,17 +314,57 @@ if view_mode == "Audit Manager" and admin_access:
                                      'status': 'Conflict', 'existing': existing['name']})
 
         if new_profiles:
+            st.markdown(f"""
+            <div style="background:#fffbeb; border:1px solid #fcd34d; border-radius:8px;
+                        padding:14px 18px; margin-bottom:16px;">
+                <b style="color:#92400e;">⚠️ {len(new_profiles)} naye account(s) mile hain.</b>
+                <span style="color:#78350f; font-size:0.9rem;">
+                 PDF se jo naam nikla woh neeche dikh raha hai. Agar naam galat ho toh edit karen,
+                 warna seedha Save dabayein.
+                </span>
+            </div>
+            """, unsafe_allow_html=True)
+
             with st.form("verify_form"):
                 updates = {}
-                for p in new_profiles:
-                    st.markdown(f"**Account:** `{p['id']}`")
-                    if p['status'] == 'New':
-                        updates[p['id']] = st.text_input(f"Register name for {p['id']}", value=p['extracted'])
-                    else:
-                        st.info(f"Conflict: DB has **{p['existing']}**, extracted **{p['extracted']}**")
-                        updates[p['id']] = st.radio(f"Use which name for {p['id']}?",
-                                                     [p['existing'], p['extracted']])
-                if st.form_submit_button("✅ Commit All to Cloud"):
+                for i, p in enumerate(new_profiles):
+                    col_l, col_r = st.columns([1, 2])
+                    with col_l:
+                        st.markdown(f"""
+                        <div style="background:#f8fafc; padding:12px; border-radius:6px;
+                                    border:1px solid #e2e8f0; margin-bottom:8px;">
+                            <div style="color:#64748b; font-size:0.75rem; font-weight:700;">ACCOUNT #{i+1}</div>
+                            <div style="color:#0f172a; font-family:monospace; font-size:0.85rem;
+                                        word-break:break-all; margin-top:4px;">{p['id']}</div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                    with col_r:
+                        if p['status'] == 'New':
+                            updates[p['id']] = st.text_input(
+                                f"✏️ Name for Account #{i+1} (edit agar galat ho)",
+                                value=p['extracted'], key=f"name_{p['id']}"
+                            )
+                        else:
+                            st.warning(f"Conflict: Database mein **{p['existing']}** hai, PDF mein **{p['extracted']}** mila")
+                            updates[p['id']] = st.radio(
+                                f"Account #{i+1} ke liye kaunsa naam use karen?",
+                                [p['existing'], p['extracted']], key=f"radio_{p['id']}"
+                            )
+                    st.divider()
+
+                col_save, col_cancel = st.columns([2, 1])
+                with col_save:
+                    save_clicked = st.form_submit_button(
+                        "💾 SAVE & ADD TO LEDGER",
+                        use_container_width=True
+                    )
+                with col_cancel:
+                    cancel_clicked = st.form_submit_button(
+                        "❌ Cancel Import",
+                        use_container_width=True
+                    )
+
+                if save_clicked:
                     for acc_id, name in updates.items():
                         upsert_profile(acc_id, name)
                     for t in st.session_state.pending_tx:
@@ -320,18 +373,39 @@ if view_mode == "Audit Manager" and admin_access:
                                         t['debit'], t['credit'], n, t['account_number'],
                                         t['is_tax'], t['source_file'])
                     st.session_state.pending_tx = None
-                    st.success("Ledger updated successfully!")
+                    st.success(f"✅ {total_found} transactions successfully added to ledger!")
+                    st.rerun()
+                if cancel_clicked:
+                    st.session_state.pending_tx = None
                     st.rerun()
         else:
-            for t in st.session_state.pending_tx:
-                prof = get_profile(t['account_number'])
-                n = prof['name'] if prof else t['party_name']
-                add_transaction(t['bank'], t['transaction_date'], t['description'],
-                                t['debit'], t['credit'], n, t['account_number'],
-                                t['is_tax'], t['source_file'])
-            st.session_state.pending_tx = None
-            st.success("Import complete!")
-            st.rerun()
+            # No new profiles - auto save with a confirm button
+            st.markdown("""
+            <div style="background:#f0fdf4; border:1px solid #86efac; border-radius:8px;
+                        padding:14px 18px; margin-bottom:16px;">
+                <b style="color:#166534;">✅ Saare accounts already registered hain.</b>
+                <span style="color:#15803d; font-size:0.9rem;">
+                 Koi naya account nahi mila. Seedha save kar sakte hain.
+                </span>
+            </div>
+            """, unsafe_allow_html=True)
+
+            col_save, col_cancel = st.columns([2, 1])
+            with col_save:
+                if st.button("💾 SAVE & ADD TO LEDGER", use_container_width=True):
+                    for t in st.session_state.pending_tx:
+                        prof = get_profile(t['account_number'])
+                        n = prof['name'] if prof else t['party_name']
+                        add_transaction(t['bank'], t['transaction_date'], t['description'],
+                                        t['debit'], t['credit'], n, t['account_number'],
+                                        t['is_tax'], t['source_file'])
+                    st.session_state.pending_tx = None
+                    st.success(f"✅ {total_found} transactions added successfully!")
+                    st.rerun()
+            with col_cancel:
+                if st.button("❌ Cancel Import", use_container_width=True):
+                    st.session_state.pending_tx = None
+                    st.rerun()
 
 elif view_mode == "Investor Portal":
 
