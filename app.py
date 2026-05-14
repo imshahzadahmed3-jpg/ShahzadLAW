@@ -205,7 +205,105 @@ if view_mode == "Audit Manager" and admin_access:
     </div>
     """, unsafe_allow_html=True)
 
-    tab1, tab2 = st.tabs(["  📤  Import Statements  ", "  📁  File Archive  "])
+    tab1, tab2, tab3 = st.tabs([
+        "  📤  Import Statements  ",
+        "  📊  Global Analysis  ",
+        "  📁  File Archive  "
+    ])
+
+    with tab2:
+        st.markdown("<div class='section-title'>📊 Complete Ledger Analysis — Saari Sheets</div>", unsafe_allow_html=True)
+
+        df_analysis = load_transactions()
+        if df_analysis.empty:
+            st.info("Koi data nahi mila. Pehle kuch bank statements import karen.")
+        else:
+            calc_all = df_analysis[df_analysis['is_tax'] == False]
+            tax_all  = df_analysis[df_analysis['is_tax'] == True]
+
+            grand_in  = calc_all['credit'].sum()
+            grand_out = calc_all['debit'].sum()
+            grand_tax = tax_all['debit'].sum() + tax_all['credit'].sum()
+            grand_net = grand_in - grand_out - grand_tax
+
+            # Grand Total Row
+            st.markdown("### 🏦 Grand Total (All Files Combined)")
+            g1, g2, g3, g4 = st.columns(4)
+            g1.markdown(f"""<div class="kpi-card" style="border-top-color:#059669;">
+                <div class="kpi-label">Total Received (In)</div>
+                <div class="kpi-value" style="color:#059669;">Rs. {grand_in:,.0f}</div>
+            </div>""", unsafe_allow_html=True)
+            g2.markdown(f"""<div class="kpi-card" style="border-top-color:#dc2626;">
+                <div class="kpi-label">Total Paid Out</div>
+                <div class="kpi-value" style="color:#dc2626;">Rs. {grand_out:,.0f}</div>
+            </div>""", unsafe_allow_html=True)
+            g3.markdown(f"""<div class="kpi-card" style="border-top-color:#d97706;">
+                <div class="kpi-label">Tax / Deductions</div>
+                <div class="kpi-value" style="color:#d97706;">Rs. {grand_tax:,.0f}</div>
+            </div>""", unsafe_allow_html=True)
+            g4.markdown(f"""<div class="kpi-card" style="border-top-color:#1a3a5c;">
+                <div class="kpi-label">Net Balance</div>
+                <div class="kpi-value" style="color:{'#059669' if grand_net >= 0 else '#dc2626'};">
+                    Rs. {grand_net:,.0f}
+                </div>
+            </div>""", unsafe_allow_html=True)
+
+            st.markdown("<br>", unsafe_allow_html=True)
+
+            # Bank-wise breakdown
+            st.markdown("### 🏛️ Bank-wise Breakdown")
+            banks = df_analysis['bank'].dropna().unique()
+            for bank in banks:
+                b_df = df_analysis[df_analysis['bank'] == bank]
+                b_calc = b_df[b_df['is_tax'] == False]
+                b_in  = b_calc['credit'].sum()
+                b_out = b_calc['debit'].sum()
+                b_net = b_in - b_out
+                st.markdown(f"""
+                <div style="background:white; border-radius:8px; padding:16px 20px;
+                            border:1px solid #e2e8f0; border-left:5px solid #1a3a5c; margin-bottom:10px;">
+                    <div style="font-weight:700; color:#0d1b2a; font-size:1rem;">🏦 {bank} Bank</div>
+                    <div style="display:flex; gap:40px; margin-top:10px; font-size:0.9rem;">
+                        <div><span style="color:#64748b;">Received (In):</span>
+                             <b style="color:#059669;"> Rs. {b_in:,.0f}</b></div>
+                        <div><span style="color:#64748b;">Paid Out:</span>
+                             <b style="color:#dc2626;"> Rs. {b_out:,.0f}</b></div>
+                        <div><span style="color:#64748b;">Net:</span>
+                             <b style="color:{'#059669' if b_net >= 0 else '#dc2626'};"> Rs. {b_net:,.0f}</b></div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+            st.markdown("<br>", unsafe_allow_html=True)
+
+            # Per-file breakdown
+            st.markdown("### 📁 File-wise Breakdown")
+            files_list = df_analysis['source_file'].dropna().unique()
+            summary_rows = []
+            for f in files_list:
+                f_df = df_analysis[df_analysis['source_file'] == f]
+                f_calc = f_df[f_df['is_tax'] == False]
+                f_tax  = f_df[f_df['is_tax'] == True]
+                summary_rows.append({
+                    'File': f,
+                    'Bank': f_df['bank'].iloc[0] if not f_df.empty else 'N/A',
+                    'Rows': len(f_df),
+                    'Period': f"{f_df['transaction_date'].min()} → {f_df['transaction_date'].max()}",
+                    'Received (In)': f_calc['credit'].sum(),
+                    'Paid Out': f_calc['debit'].sum(),
+                    'Tax': f_tax['debit'].sum() + f_tax['credit'].sum(),
+                })
+
+            summary_df = pd.DataFrame(summary_rows)
+            st.dataframe(
+                summary_df.style.format({
+                    'Received (In)': 'Rs. {:,.0f}',
+                    'Paid Out': 'Rs. {:,.0f}',
+                    'Tax': 'Rs. {:,.0f}',
+                }),
+                use_container_width=True,
+                hide_index=True
+            )
 
     with tab1:
         col1, col2 = st.columns([1, 2], gap="large")
@@ -251,7 +349,7 @@ if view_mode == "Audit Manager" and admin_access:
             else:
                 st.info("Upload PDFs on the left and click Process to begin.")
 
-    with tab2:
+    with tab3:
         st.markdown("<div class='section-title'>Synchronized File Archive</div>", unsafe_allow_html=True)
         files = get_uploaded_files()
         df_all = load_transactions()
