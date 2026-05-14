@@ -100,8 +100,10 @@ with st.sidebar:
     admin_access = False
     if view_mode == "🔑 Admin Panel":
         st.markdown("---")
+        # Get password from Secrets, fallback to 'admin123'
+        correct_password = os.getenv("ADMIN_PASSWORD", "admin123")
         password = st.text_input("Security Pin", type="password")
-        if password == "admin123":
+        if password == correct_password:
             admin_access = True
             st.success("Authorized")
         elif password:
