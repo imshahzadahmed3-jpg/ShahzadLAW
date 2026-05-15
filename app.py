@@ -978,9 +978,10 @@ elif view_mode == "Investor Portal":
         bank_filter = st.selectbox("Bank", bank_list, label_visibility="collapsed")
     with f_col3:
         if not df_all.empty and not df_all['date_obj'].isna().all():
-            min_dt = df_all['date_obj'].min()
-            max_dt = df_all['date_obj'].max()
-            date_range = st.date_input("Range", [min_dt, max_dt], label_visibility="collapsed")
+            # Default to the full range found in the database
+            full_min = df_all['date_obj'].min().date()
+            full_max = df_all['date_obj'].max().date()
+            date_range = st.date_input("Date Audit Range", [full_min, full_max], label_visibility="collapsed")
         else:
             date_range = None
 
