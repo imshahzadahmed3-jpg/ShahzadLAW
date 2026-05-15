@@ -89,10 +89,20 @@ def add_transaction(bank, date, desc, debit, credit, party_name="", account_numb
 def load_transactions():
     if supabase:
         try:
-            # Fetch with a high limit to get all records (Supabase default is 1000)
-            res = supabase.table("transactions").select("*").order("added_at", desc=True).limit(10000).execute()
-            if res.data:
-                return pd.DataFrame(res.data)
+            all_data = []
+            chunk_size = 1000
+            offset = 0
+            while True:
+                res = supabase.table("transactions").select("*").order("added_at", desc=True).range(offset, offset + chunk_size - 1).execute()
+                if not res.data:
+                    break
+                all_data.extend(res.data)
+                if len(res.data) < chunk_size:
+                    break
+                offset += chunk_size
+            
+            if all_data:
+                return pd.DataFrame(all_data)
         except Exception as e:
             print(f"Supabase Load Error: {e}")
             
